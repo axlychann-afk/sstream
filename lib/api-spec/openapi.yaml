@@ -1,0 +1,584 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: DonghuaStream API — streaming website for Chinese animation
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: donghua
+    description: Donghua series and episodes
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /donghua/ongoing:
+    get:
+      operationId: getOngoing
+      tags: [donghua]
+      summary: Get ongoing donghua list
+      description: Returns all currently airing donghua with pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: List of ongoing donghua
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonghuaListResponse"
+
+  /donghua/completed:
+    get:
+      operationId: getCompleted
+      tags: [donghua]
+      summary: Get completed donghua list
+      description: Returns all completed donghua with pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: List of completed donghua
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonghuaListResponse"
+
+  /donghua/upcoming:
+    get:
+      operationId: getUpcoming
+      tags: [donghua]
+      summary: Get upcoming donghua list
+      description: Returns donghua that are upcoming/not yet aired
+      responses:
+        "200":
+          description: List of upcoming donghua
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonghuaListResponse"
+
+  /donghua/search:
+    get:
+      operationId: searchDonghua
+      tags: [donghua]
+      summary: Search donghua by title
+      description: Search donghua series by keyword
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonghuaListResponse"
+
+  /donghua/schedule:
+    get:
+      operationId: getSchedule
+      tags: [donghua]
+      summary: Get weekly airing schedule
+      description: Returns airing schedule grouped by day of week
+      responses:
+        "200":
+          description: Weekly schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleResponse"
+
+  /donghua/detail:
+    get:
+      operationId: getDonghuaDetail
+      tags: [donghua]
+      summary: Get detail of a donghua series
+      description: Returns full detail including episodes list
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Donghua detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetailResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /donghua/servers:
+    get:
+      operationId: getServers
+      tags: [donghua]
+      summary: Get all video servers for an episode
+      description: Returns list of all available video servers (including Vidio) for a specific episode slug
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Servers list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServersResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /donghua/download:
+    get:
+      operationId: getDownload
+      tags: [donghua]
+      summary: Get download links for an episode
+      description: Returns download links grouped by quality for a specific episode slug
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Download links
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /donghua/stream:
+    get:
+      operationId: getStream
+      tags: [donghua]
+      summary: Get streaming URL for an episode
+      description: Returns embed URL and stream info for a specific episode slug
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Stream information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamResponse"
+        "404":
+          description: Stream not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /donghua/trending:
+    get:
+      operationId: getTrending
+      tags: [donghua]
+      summary: Get trending/featured donghua
+      description: Returns a curated list of trending and recently updated donghua
+      responses:
+        "200":
+          description: Trending donghua
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrendingResponse"
+
+  /donghua/drop:
+    get:
+      operationId: getDropped
+      tags: [donghua]
+      summary: Get dropped donghua list
+      description: Returns donghua series that have been dropped
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: List of dropped donghua
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonghuaListResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    DonghuaItem:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        sub:
+          type: string
+        thumbnail:
+          type: ["string", "null"]
+      required:
+        - title
+        - slug
+        - url
+        - type
+        - status
+        - sub
+
+    DonghuaListResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        total:
+          type: integer
+        page:
+          type: integer
+        hasMore:
+          type: boolean
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonghuaItem"
+      required:
+        - status
+        - total
+        - page
+        - hasMore
+        - results
+
+    Episode:
+      type: object
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
+        url:
+          type: string
+        slug:
+          type: string
+        date:
+          type: ["string", "null"]
+      required:
+        - number
+        - title
+        - url
+        - slug
+
+    DonghuaDetail:
+      type: object
+      properties:
+        title:
+          type: string
+        alternative:
+          type: string
+        rating:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+        studio:
+          type: string
+        network:
+          type: string
+        releaseDate:
+          type: string
+        duration:
+          type: string
+        season:
+          type: string
+        country:
+          type: string
+        totalEpisodes:
+          type: ["string", "integer"]
+        subber:
+          type: string
+        genres:
+          type: array
+          items:
+            type: string
+        sinopsis:
+          type: string
+        cover:
+          type: ["string", "null"]
+        episodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Episode"
+      required:
+        - title
+        - status
+        - genres
+        - episodes
+
+    DetailResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        result:
+          $ref: "#/components/schemas/DonghuaDetail"
+      required:
+        - status
+        - result
+
+    VideoServer:
+      type: object
+      properties:
+        name:
+          type: string
+        embed_url:
+          type: string
+      required:
+        - name
+        - embed_url
+
+    StreamInfo:
+      type: object
+      properties:
+        title:
+          type: string
+        source:
+          type: string
+        video_id:
+          type: ["string", "null"]
+        embed_url:
+          type: string
+        watch_url:
+          type: string
+        servers:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoServer"
+      required:
+        - title
+        - source
+        - embed_url
+        - watch_url
+        - servers
+
+    StreamResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        result:
+          $ref: "#/components/schemas/StreamInfo"
+      required:
+        - status
+        - result
+
+    ServersInfo:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        total_servers:
+          type: integer
+        servers:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoServer"
+      required:
+        - title
+        - slug
+        - total_servers
+        - servers
+
+    ServersResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        result:
+          $ref: "#/components/schemas/ServersInfo"
+      required:
+        - status
+        - result
+
+    DownloadLink:
+      type: object
+      properties:
+        label:
+          type: string
+        url:
+          type: string
+      required:
+        - label
+        - url
+
+    DownloadQuality:
+      type: object
+      properties:
+        quality:
+          type: string
+        size:
+          type: string
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/DownloadLink"
+      required:
+        - quality
+        - size
+        - links
+
+    DownloadInfo:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        downloads:
+          type: array
+          items:
+            $ref: "#/components/schemas/DownloadQuality"
+      required:
+        - title
+        - slug
+        - downloads
+
+    DownloadResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        result:
+          $ref: "#/components/schemas/DownloadInfo"
+      required:
+        - status
+        - result
+
+    ScheduleDay:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        url:
+          type: string
+        is_vip:
+          type: boolean
+      required:
+        - title
+        - slug
+        - url
+        - is_vip
+
+    ScheduleResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        result:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/ScheduleDay"
+      required:
+        - status
+        - result
+
+    TrendingResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        ongoing:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonghuaItem"
+        completed:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonghuaItem"
+        upcoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonghuaItem"
+      required:
+        - status
+        - ongoing
+        - completed
+        - upcoming
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        error:
+          type: string
+      required:
+        - status
+        - error
