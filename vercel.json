@@ -1,0 +1,12 @@
+{
+  "installCommand": "corepack enable pnpm && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @workspace/donghua-stream run build",
+  "outputDirectory": "artifacts/donghua-stream/dist",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
