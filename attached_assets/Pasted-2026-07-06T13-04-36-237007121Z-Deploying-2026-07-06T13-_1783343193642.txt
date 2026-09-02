@@ -1,0 +1,19 @@
+2026-07-06T13:04:36.237007121Z ==> Deploying...
+2026-07-06T13:04:36.447504368Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-07-06T13:05:03.357270706Z ==> Running 'pnpm --filter @workspace/api-server run start'
+2026-07-06T13:05:20.662925639Z 
+2026-07-06T13:05:20.66296239Z > @workspace/api-server@0.0.0 start /opt/render/project/src/artifacts/api-server
+2026-07-06T13:05:20.66297086Z > node --enable-source-maps ./dist/index.mjs
+2026-07-06T13:05:20.66297409Z 
+2026-07-06T13:05:22.167923687Z {"level":30,"time":1783343122165,"pid":108,"hostname":"srv-d95ec5vavr4c73a9k7t0-hibernate-84f878bf6-lbfqg","port":10000,"msg":"Server listening"}
+2026-07-06T13:05:23.138538458Z {"level":30,"time":1783343123138,"pid":108,"hostname":"srv-d95ec5vavr4c73a9k7t0-hibernate-84f878bf6-lbfqg","req":{"id":1,"method":"HEAD","url":"/"},"res":{"statusCode":404},"responseTime":3,"msg":"request completed"}
+2026-07-06T13:05:24.968657627Z {"level":30,"time":1783343124968,"pid":108,"hostname":"srv-d95ec5vavr4c73a9k7t0-hibernate-84f878bf6-lbfqg","msg":"Cache warmed up"}
+2026-07-06T13:05:27.061509339Z ==> Your service is live 🎉
+2026-07-06T13:05:27.097330245Z {"level":30,"time":1783343127093,"pid":108,"hostname":"srv-d95ec5vavr4c73a9k7t0-hibernate-84f878bf6-lbfqg","req":{"id":2,"method":"GET","url":"/"},"res":{"statusCode":404},"responseTime":2,"msg":"request completed"}
+2026-07-06T13:05:27.2777964Z ==> 
+2026-07-06T13:05:27.283270623Z ==> ///////////////////////////////////////////////////////////
+2026-07-06T13:05:27.287147271Z ==> 
+2026-07-06T13:05:27.290676153Z ==> Available at your primary URL https://donghua-api-g0en.onrender.com
+2026-07-06T13:05:27.294349938Z ==> 
+2026-07-06T13:05:27.298315145Z ==> ///////////////////////////////////////////////////////////
+2026-07-06T13:05:48.587176968Z {"level":30,"time":1783343148586,"pid":108,"hostname":"srv-d95ec5vavr4c73a9k7t0-hibernate-84f878bf6-lbfqg","req":{"id":3,"method":"GET","url":"/"},"res":{"statusCode":404},"responseTime":0,"msg":"request completed"}

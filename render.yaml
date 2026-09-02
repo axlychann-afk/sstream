@@ -1,0 +1,32 @@
+services:
+  # ─── API Server (Express scraper backend) ───────────────────────────────────
+  - type: web
+    name: donghua-api
+    runtime: node
+    region: oregon
+    buildCommand: npx --yes pnpm@10 install --frozen-lockfile && npx pnpm@10 --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  # ─── Frontend (Vite / React static site) ────────────────────────────────────
+  - type: web
+    name: donghua-frontend
+    runtime: static
+    buildCommand: npx --yes pnpm@10 install --frozen-lockfile && npx pnpm@10 --filter @workspace/donghua-stream run build
+    staticPublishPath: ./artifacts/donghua-stream/dist
+    envVars:
+      - key: BASE_PATH
+        value: /
+      # Set this to your Render API URL after the API service is deployed,
+      # e.g. https://donghua-api.onrender.com
+      - key: VITE_API_BASE_URL
+        value: ""
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
