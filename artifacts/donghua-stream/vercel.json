@@ -1,6 +1,6 @@
 {
-  "installCommand": "corepack enable pnpm && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/donghua-stream run build",
+  "installCommand": "cd ../.. && corepack enable pnpm && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "framework": null,
   "functions": {
