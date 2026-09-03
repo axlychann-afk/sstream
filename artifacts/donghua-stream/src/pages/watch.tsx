@@ -221,9 +221,14 @@ export default function Watch() {
 
   // Build server list: anichin servers (via backend/direct Axly) + Animasu (direct browser fetch)
   // Deduped by embed_url, blocked servers filtered out
-  const primaryServers = (serversData?.result?.servers ?? [])
+  const streamFallbackServer = stream?.embed_url
+    ? [{ label: "Stream API", embed_url: stream.embed_url }]
+    : [];
+  const primaryServers = (serversData?.result?.servers?.length
+    ? serversData.result.servers
+    : streamFallbackServer)
     .map((s) => ({ ...s, embed_url: unwrapEmbedUrl(s.embed_url ?? "") }))
-    .filter((s) => !isServerBlocked(s.label ?? s.name ?? "", s.embed_url));
+    .filter((s) => s.embed_url && !isServerBlocked(s.label ?? s.name ?? "", s.embed_url));
   const seenUrls = new Set(primaryServers.map((s) => s.embed_url ?? ""));
   const extraServers = animasuServers
     .map((s) => ({ ...s, embed_url: unwrapEmbedUrl(s.embed_url ?? "") }))

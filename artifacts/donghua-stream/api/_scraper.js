@@ -167,25 +167,44 @@ export async function scrapeAnichinServersForSlug(slug) {
     });
     if (!res.ok) return [];
     const html = await res.text();
+    if (/cf-chl-|challenge-platform|security verification|just a moment/i.test(html)) return [];
     const servers = [];
-    const re = /<option\s+value=["']([^"']+)["'][^>]*>\s*([^<]+?)\s*<\/option>/gi;
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      const b64 = m[1];
-      const label = m[2].trim();
-      if (!b64 || !label) continue;
-      let decoded;
+    const seen = new Set();
+    const decodeHtml = (value) => value
+      .replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#039;|&#39;/gi, "'")
+      .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+    const decodeValue = (value) => {
+      const raw = decodeHtml(value.trim());
+      const candidates = [raw];
       try {
-        decoded = Buffer.from(b64, 'base64').toString('utf-8');
-      } catch {
-        continue;
+        const decoded = Buffer.from(raw.replace(/\s/g, ''), 'base64').toString('utf-8');
+        if (decoded && decoded !== raw) candidates.unshift(decodeHtml(decoded));
+      } catch { /* plain URL/HTML */ }
+      return candidates;
+    };
+    const addServer = (label, value) => {
+      const cleanLabel = decodeHtml(label).replace(/\s+/g, ' ').trim() || 'Anichin';
+      for (const candidate of decodeValue(value)) {
+        const src = candidate.match(/(?:src|data-src|data-url)=["']([^"']+)["']/i)?.[1]
+          || candidate.match(/https?:\/\/[^\s"'<>]+/i)?.[0];
+        if (!src) continue;
+        const cleanSrc = unwrapEmbedUrl(src.replace(/\\\//g, '/'));
+        if (!cleanSrc || isServerBlocked(cleanLabel, cleanSrc) || seen.has(cleanSrc)) continue;
+        seen.add(cleanSrc);
+        servers.push({ name: cleanLabel, embed_url: cleanSrc });
+        return;
       }
-      const src = decoded.match(/src=["']([^"']+)["']/i)?.[1];
-      if (!src) continue;
-      const cleanSrc = unwrapEmbedUrl(src);
-      if (!cleanSrc) continue;
-      if (isServerBlocked(label, cleanSrc)) continue;
-      servers.push({ name: label, embed_url: cleanSrc });
+    };
+    const optionRe = /<option\b([^>]*)>([\s\S]*?)<\/option>/gi;
+    let m;
+    while ((m = optionRe.exec(html)) !== null) {
+      const attrs = m[1];
+      const value = attrs.match(/(?:value|data-src|data-embed|data-url)=["']([^"']+)["']/i)?.[1];
+      if (value) addServer(m[2].replace(/<[^>]+>/g, ''), value);
+    }
+    for (const match of html.matchAll(/<(?:iframe|embed)\b([^>]*)>/gi)) {
+      const src = match[1].match(/(?:src|data-src)=["']([^"']+)["']/i)?.[1];
+      if (src) addServer('Anichin', src);
     }
     return servers;
   } catch {
