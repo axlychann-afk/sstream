@@ -738,11 +738,12 @@ export async function scrapeStream(slug: string): Promise<StreamInfo> {
   // Call anichin /stream, anichin /servers, Animasu, and Dailymotion all in
   // parallel (see scrapeServers above for why Dailymotion must not be
   // fetched sequentially after the others).
-  const [streamRes, serversRes, animasuServers, dailymotionRes] = await Promise.allSettled([
+  const [streamRes, serversRes, animasuServers, dailymotionRes, directServersRes] = await Promise.allSettled([
     http.get<AxlyStreamResponse>(`/stream?slug=${encodeURIComponent(slug)}`),
     http.get<AxlyServersResponse>(`/servers?slug=${encodeURIComponent(slug)}`),
     scrapeAnimasuServersForSlug(slug),
     getDailymotionServer(slug),
+    scrapeAnichinServersForSlug(slug),
   ]);
 
   // Basic metadata from /stream
@@ -775,7 +776,9 @@ export async function scrapeStream(slug: string): Promise<StreamInfo> {
 
   // Merge anichin + Animasu servers (deduplicated by embed_url)
   const extras = animasuServers.status === "fulfilled" ? animasuServers.value : [];
-  const servers = mergeServers(anichinServers, extras);
+  const directServers = directServersRes.status === "fulfilled" ? directServersRes.value : [];
+  let servers = mergeServers(anichinServers, extras);
+  servers = mergeServers(servers, directServers);
 
   // Extra server from the dongchindopro Dailymotion channel (opt-in per series,
   // see dailymotion.ts) — fetched in parallel above, appended here if it resolved.
