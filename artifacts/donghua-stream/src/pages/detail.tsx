@@ -1,4 +1,4 @@
-import { useGetDonghuaDetail, useSearchDonghua, getGetDonghuaDetailQueryKey } from "@workspace/api-client-react";
+import { getGetDonghuaDetailQueryKey, getSearchDonghuaQueryKey, useGetDonghuaDetail, useSearchDonghua } from "@workspace/api-client-react";
 import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { PlayCircle, Star, ListVideo, ChevronDown, ChevronUp } from "lucide-react";
@@ -57,7 +57,7 @@ export default function Detail() {
   const searchQuery = slug.replace(/-/g, " ");
   const { data: searchData } = useSearchDonghua(
     { q: searchQuery },
-    { query: { enabled: notFound && !!searchQuery, retry: false } }
+    { query: { enabled: notFound && !!searchQuery, retry: false, queryKey: getSearchDonghuaQueryKey({ q: searchQuery }) } }
   );
 
   // Auto-redirect if search found a close match with a different slug
