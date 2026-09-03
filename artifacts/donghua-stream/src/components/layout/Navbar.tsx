@@ -1,7 +1,7 @@
 import { Search, Menu, X, Play } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSearchDonghua } from "@workspace/api-client-react";
+import { getSearchDonghuaQueryKey, useSearchDonghua } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -27,7 +27,7 @@ function SearchBar({
   onChange: (v: string) => void;
   onSubmit: () => void;
   onNavigate: () => void;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   className?: string;
   inputClassName?: string;
   placeholder?: string;
@@ -59,7 +59,7 @@ function SearchBar({
 
   const { data: suggestData } = useSearchDonghua(
     { q: debouncedQ },
-    { query: { enabled: debouncedQ.length >= 2, staleTime: 30_000 } }
+    { query: { enabled: debouncedQ.length >= 2, staleTime: 30_000, queryKey: getSearchDonghuaQueryKey({ q: debouncedQ }) } }
   );
 
   const suggestions = suggestData?.results?.slice(0, 6) ?? [];
