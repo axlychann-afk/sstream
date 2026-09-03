@@ -2,10 +2,9 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { getDailymotionServer, listDailymotionEpisodes } from "./dailymotion.js";
 
-const AXLY_BASE = "https://axlyapi.qzz.io/donghua";
+const ANICHIN_BASE = "https://anichin.cafe";
 const AXLY_ANIMASU_BASE = "https://axlyapi.qzz.io/anime/animasu";
 const ANIMASU_EPISODE_BASE = "https://v1.animasu.work";
-const ANICHIN_BASE = "https://anichin.moe";
 const REQUEST_TIMEOUT = 20000;
 
 // Servers blocked from appearing in the player (confirmed to block iframe embedding)
@@ -33,7 +32,7 @@ export function unwrapEmbedUrl(url: string): string {
 }
 
 const http = axios.create({
-  baseURL: AXLY_BASE,
+  baseURL: ANICHIN_BASE,
   timeout: REQUEST_TIMEOUT,
   headers: {
     "User-Agent": "DonghuaStream/1.0",
@@ -369,47 +368,42 @@ function computeHasMore(data: AxlyListResponse, pageSize = 30): boolean {
 // Exported scraper functions
 // ──────────────────────────────────────────────
 
-export async function scrapeOngoing(
-  page = 1
-): Promise<{ results: DonghuaItem[]; hasMore: boolean }> {
-  const { data } = await http.get<AxlyListResponse>(`/ongoing?page=${page}`);
-  const results = (Array.isArray(data.results) ? data.results : []).map(mapItem);
-  return { results, hasMore: computeHasMore(data) };
+function parseAnichinList(html: string): DonghuaItem[] {
+  const $ = cheerio.load(html);
+  const items: DonghuaItem[] = [];
+  $(".listupd .bs, .listupd .bsx, .bs").each((_, el) => {
+    const link = $(el).find("a").first();
+    const href = link.attr("href") ?? "";
+    if (!href || href.includes("javascript:")) return;
+    const url = new URL(href, ANICHIN_BASE).href;
+    const image = $(el).find("img").first();
+    const thumbnail = image.attr("data-src") || image.attr("data-lazy-src") || image.attr("src") || null;
+    const title = dedupeTitle(link.attr("title") || $(el).find(".tt, .title").first().text().trim());
+    if (!title || items.some((item) => item.url === url)) return;
+    items.push({ title, slug: slugFromUrl(url), url, type: "Donghua", status: "", sub: $(el).find(".sb, .epx").first().text().trim(), thumbnail });
+  });
+  return items;
 }
 
-export async function scrapeCompleted(
-  page = 1
-): Promise<{ results: DonghuaItem[]; hasMore: boolean }> {
-  const { data } = await http.get<AxlyListResponse>(`/completed?page=${page}`);
-  const results = (Array.isArray(data.results) ? data.results : []).map(mapItem);
-  return { results, hasMore: computeHasMore(data) };
+async function scrapeAnichinList(path: string, page = 1): Promise<{ results: DonghuaItem[]; hasMore: boolean }> {
+  const suffix = page > 1 ? `page/${page}/` : "";
+  try {
+    const { data } = await httpDirect.get<string>(`/${path}/${suffix}`, { responseType: "text" });
+    const results = parseAnichinList(data);
+    return { results, hasMore: results.length >= 20 };
+  } catch (error) {
+    console.warn(`[v0] Anichin list unavailable: /${path}/`, error instanceof Error ? error.message : error);
+    return { results: [], hasMore: false };
+  }
 }
 
-export async function scrapeDropped(
-  page = 1
-): Promise<{ results: DonghuaItem[]; hasMore: boolean }> {
-  const { data } = await http.get<AxlyListResponse>(`/drop?page=${page}`);
-  const results = (Array.isArray(data.results) ? data.results : []).map(mapItem);
-  return { results, hasMore: computeHasMore(data) };
-}
-
-export async function scrapeUpcoming(): Promise<{
-  results: DonghuaItem[];
-  hasMore: boolean;
-}> {
-  const { data } = await http.get<AxlyListResponse>("/upcoming");
-  const results = (Array.isArray(data.results) ? data.results : []).map(mapItem);
-  return { results, hasMore: false };
-}
-
-export async function scrapeSearch(
-  q: string
-): Promise<{ results: DonghuaItem[] }> {
-  const { data } = await http.get<AxlyListResponse>(
-    `/search?q=${encodeURIComponent(q)}`
-  );
-  const results = (Array.isArray(data.results) ? data.results : []).map(mapItem);
-  return { results };
+export const scrapeOngoing = (page = 1) => scrapeAnichinList("ongoing-anime", page);
+export const scrapeCompleted = (page = 1) => scrapeAnichinList("completed-anime", page);
+export const scrapeDropped = (page = 1) => scrapeAnichinList("dropped-anime", page);
+export const scrapeUpcoming = () => scrapeAnichinList("upcoming-anime");
+export async function scrapeSearch(q: string): Promise<{ results: DonghuaItem[] }> {
+  const { data } = await httpDirect.get<string>(`/?s=${encodeURIComponent(q)}&post_type=post`, { responseType: "text" });
+  return { results: parseAnichinList(data) };
 }
 
 /**
@@ -817,7 +811,8 @@ export interface PopularItem {
 
 /** Scrape latest/popular releases directly from anichin.moe homepage */
 export async function scrapePopular(): Promise<PopularItem[]> {
-  const { data } = await httpDirect.get<string>("/", { responseType: "text" });
+  try {
+    const { data } = await httpDirect.get<string>("/", { responseType: "text" });
   const $ = cheerio.load(data);
   const items: PopularItem[] = [];
 
@@ -876,11 +871,16 @@ export async function scrapePopular(): Promise<PopularItem[]> {
     seen.add(seriesSlug);
     return true;
   });
+  } catch (error) {
+    console.warn("[v0] Anichin popular unavailable", error instanceof Error ? error.message : error);
+    return [];
+  }
 }
 
 export async function scrapeSchedule(): Promise<
   Record<string, ScheduleItem[]>
 > {
+  try {
   const { data } = await http.get<AxlyScheduleResponse>("/schedule");
 
   const raw = typeof data?.result === "object" && data.result !== null
@@ -906,4 +906,8 @@ export async function scrapeSchedule(): Promise<
   }
 
   return schedule;
+  } catch (error) {
+    console.warn("[v0] Anichin schedule unavailable", error instanceof Error ? error.message : error);
+    return {};
+  }
 }
