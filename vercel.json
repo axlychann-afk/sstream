@@ -1,7 +1,7 @@
 {
   "installCommand": "corepack enable pnpm && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "pnpm --dir artifacts/donghua-stream run build",
+  "outputDirectory": "artifacts/donghua-stream/dist",
   "framework": "vite",
   "rewrites": [
     {
